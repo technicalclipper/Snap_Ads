@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 contract SnapAds {
     address public owner;
+    uint256 public adIdCounter;
 
     // Struct for ad details
     struct Ad {
@@ -31,6 +32,11 @@ contract SnapAds {
     }
 
     mapping(address => AdSpot) public adSpots; // contractAddress => AdSpot details
+    mapping(uint256 => Ad) public ads; // adId => Ad details
+
+    mapping(address => uint256[]) public advertiserAds; // advertiser address => list of adIds
+    mapping(address => uint256) public advertiserBalances; // address -> balance
+
     address[] public adSpotList;
 
     // ===============================
@@ -92,4 +98,45 @@ contract SnapAds {
 
         return (addresses, names);
     }
+
+    // ================================
+    // Ad Publishing (Advertisers)
+    // ================================
+
+    function publishAd(
+        address adSpotContract,
+        string calldata name,
+        string calldata description,
+        string calldata ipfsVideoCID
+    ) external payable {
+        require(adSpots[adSpotContract].isAvailable, "Ad spot not available");
+        require(msg.value > 0, "Must send funds to publish ad");
+
+        adIdCounter++;
+        uint256 newAdId = adIdCounter;
+
+        ads[newAdId] = Ad({
+            advertiser: msg.sender,
+            name: name,
+            description: description,
+            ipfsVideoCID: ipfsVideoCID,
+            totalFunded: msg.value,
+            spent: 0,
+            isActive: true,
+            adSpotContract: adSpotContract
+        });
+
+        advertiserAds[msg.sender].push(newAdId);
+        advertiserBalances[msg.sender] += msg.value;
+
+        emit AdPublished(newAdId, msg.sender, name, ipfsVideoCID, msg.value);
+    }
+
+    event AdPublished(
+        uint256 indexed adId,
+        address indexed advertiser,
+        string name,
+        string ipfsVideoLink,
+        uint256 amount
+    );
 }
