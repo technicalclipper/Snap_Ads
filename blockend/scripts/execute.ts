@@ -3,7 +3,8 @@ import { ethers } from "hardhat";
 async function main() {
   const ENTRTPOINT_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
   const FACTORY_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-  const PAYMASTER_ADDRESS = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
+  const SNAPADS_ADDRESS = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
+  const PAYMASTER_ADDRESS = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9";
 
   const entryPoint = await ethers.getContractAt(
     "EntryPoint",
@@ -24,17 +25,24 @@ async function main() {
   const [signer1] = await ethers.getSigners();
   const address0 = await signer1.getAddress();
 
-  const initCode =
-    FACTORY_ADDRESS +
-    AccountFactory.interface
-      .encodeFunctionData("createAccount", [address0])
-      .slice(2);
+  const initCode = "0x";
+  // FACTORY_ADDRESS +
+  // AccountFactory.interface
+  //   .encodeFunctionData("createAccount", [address0])
+  //   .slice(2);
 
   console.log("Sender Address: ", sender);
 
-  await entryPoint.depositTo(PAYMASTER_ADDRESS, {
-    value: ethers.parseEther("100"),
-  });
+  // await entryPoint.depositTo(PAYMASTER_ADDRESS, {
+  //   value: ethers.parseEther("100"),
+  // });
+
+  // Encode the Interaction struct
+  const adId = 0;
+  const interactionData = ethers.AbiCoder.defaultAbiCoder().encode(
+    ["address", "uint256"],
+    [sender, adId]
+  );
 
   const userOp = {
     sender: sender,
@@ -46,7 +54,7 @@ async function main() {
     preVerificationGas: 50_000,
     maxFeePerGas: ethers.parseUnits("10", "gwei"),
     maxPriorityFeePerGas: ethers.parseUnits("5", "gwei"),
-    paymasterAndData: PAYMASTER_ADDRESS,
+    paymasterAndData: PAYMASTER_ADDRESS + interactionData.slice(2),
     signature: "0x",
   };
 
