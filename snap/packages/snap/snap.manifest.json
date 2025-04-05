@@ -1,0 +1,31 @@
+{
+  "version": "0.1.0",
+  "description": "SnapAds!",
+  "proposedName": "SnapAds!",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MetaMask/template-snap-monorepo.git"
+  },
+  "source": {
+    "shasum": "C1R5VtieX72AwjLDskfgbyTwFpYxa66pPcgDSJfLP9s=",
+    "location": {
+      "npm": {
+        "filePath": "dist/bundle.js",
+        "packageName": "snap",
+        "registry": "https://registry.npmjs.org/"
+      }
+    }
+  },
+  "initialPermissions": {
+    "snap_dialog": {},
+    "endowment:rpc": {
+      "dapps": true,
+      "snaps": false
+    },
+    "endowment:transaction-insight": {},
+    "endowment:network-access": {},
+    "endowment:signature-insight": {}
+  },
+  "platformVersion": "6.18.0",
+  "manifestVersion": "0.1"
+}
