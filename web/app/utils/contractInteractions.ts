@@ -9,6 +9,35 @@ const getContract = async (signer: ethers.Signer): Promise<SnapAdsContract> => {
   ) as SnapAdsContract;
 };
 
+// Get ad details
+export const getAdDetails = async (signer: ethers.Signer, adId: string) => {
+  try {
+    const contract = await getContract(signer);
+    const [
+      advertiser,
+      name,
+      description,
+      ipfsVideoLink,
+      totalFunded,
+      spent,
+      isActive,
+    ] = await contract.getAdDetails(adId);
+    return {
+      id: adId,
+      advertiser,
+      name,
+      description,
+      ipfsVideoCID: ipfsVideoLink,
+      totalFunded: ethers.formatEther(totalFunded),
+      spent: ethers.formatEther(spent),
+      isActive,
+    };
+  } catch (error) {
+    console.error("Error getting ad details:", error);
+    throw error;
+  }
+};
+
 // Register an ad spot
 export const registerAdSpot = async (
   signer: ethers.Signer,
@@ -94,6 +123,23 @@ export const getAvailableAds = async (signer: ethers.Signer) => {
     }));
   } catch (error) {
     console.error("Error getting available ads:", error);
+    throw error;
+  }
+};
+
+// Watch an ad
+export const watchAd = async (
+  signer: ethers.Signer,
+  adId: string,
+  watcher: string
+) => {
+  try {
+    const contract = await getContract(signer);
+    const tx = await contract.watchAd(adId, watcher);
+    await tx.wait();
+    return true;
+  } catch (error) {
+    console.error("Error watching ad:", error);
     throw error;
   }
 };

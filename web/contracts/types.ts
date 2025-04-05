@@ -19,4 +19,5 @@ export interface SnapAdsContract extends BaseContract {
     [string[], string[], string[], string[], string[], BigNumberish[]]
   >;
   adInteractionsLength(adId: string): Promise<BigNumberish>;
+  getAdDetails(adId: string): Promise<[string, string, string, string, BigNumberish, BigNumberish, boolean]>;
 }

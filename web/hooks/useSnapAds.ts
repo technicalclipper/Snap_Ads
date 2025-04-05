@@ -6,7 +6,8 @@ import {
   getAvailableAdSpots,
   getAvailableAds,
   getAdInteractionsCount,
-} from "../utils/contractInteractions";
+  watchAd,
+} from "../app/utils/contractInteractions";
 
 export const useSnapAds = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -109,6 +110,21 @@ export const useSnapAds = () => {
     }
   };
 
+  const handleWatchAd = async (adId: string, watcher: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const signer = await getSigner();
+      await watchAd(signer, adId, watcher);
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return {
     isLoading,
     error,
@@ -117,5 +133,6 @@ export const useSnapAds = () => {
     getAvailableAdSpots: handleGetAvailableAdSpots,
     getAvailableAds: handleGetAvailableAds,
     getAdInteractions: handleGetAdInteractions,
+    watchAd: handleWatchAd,
   };
 };

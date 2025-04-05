@@ -157,10 +157,23 @@ contract SnapAds {
     }
 
     event AdWatched(address indexed user, uint256 indexed adId, uint256 timestamp);
-
-    // =========================
+ 
+    // =0xAe4600e84007d49Cf3f45fFBA57D1EC156EA75cE========================
     // Getters
     // =========================
+
+    function getAdDetails(uint256 adId) external view returns (
+        address advertiser,
+        string memory name,
+        string memory description,
+        string memory ipfsVideoLink,
+        uint256 totalFunded,
+        uint256 spent,
+        bool isActive
+    ){
+        Ad memory ad = ads[adId];
+        return (ad.advertiser, ad.name, ad.description, ad.ipfsVideoLink, ad.totalFunded, ad.spent, ad.isActive);
+    }
 
     function getAvailableAds() external view returns (
         uint256[] memory, 

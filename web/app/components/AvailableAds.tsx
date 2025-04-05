@@ -28,7 +28,7 @@ export default function AvailableAds() {
       const interactionCounts: { [key: string]: number } = {};
       for (const ad of availableAds) {
         const count = await getAdInteractions(ad.id);
-        interactionCounts[ad.id] = count;
+        interactionCounts[ad.id] = Number(count);
       }
       setInteractions(interactionCounts);
     };
