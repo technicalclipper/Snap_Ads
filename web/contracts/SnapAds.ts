@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 
-export const CONTRACT_ADDRESS = "0xE725334BaC4fecBa0f636B1aEE0586227A894049"; // Replace with your deployed contract address
+export const CONTRACT_ADDRESS = "0xAe4600e84007d49Cf3f45fFBA57D1EC156EA75cE"; // Replace with your deployed contract address
 
 export const CONTRACT_ABI = [
   {
@@ -262,6 +262,55 @@ export const CONTRACT_ABI = [
         internalType: "uint256",
         name: "",
         type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "adId",
+        type: "uint256",
+      },
+    ],
+    name: "getAdDetails",
+    outputs: [
+      {
+        internalType: "address",
+        name: "advertiser",
+        type: "address",
+      },
+      {
+        internalType: "string",
+        name: "name",
+        type: "string",
+      },
+      {
+        internalType: "string",
+        name: "description",
+        type: "string",
+      },
+      {
+        internalType: "string",
+        name: "ipfsVideoLink",
+        type: "string",
+      },
+      {
+        internalType: "uint256",
+        name: "totalFunded",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "spent",
+        type: "uint256",
+      },
+      {
+        internalType: "bool",
+        name: "isActive",
+        type: "bool",
       },
     ],
     stateMutability: "view",
