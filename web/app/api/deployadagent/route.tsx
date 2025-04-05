@@ -4,7 +4,7 @@ import z from "zod";
 import { user } from "@covalenthq/ai-agent-sdk/dist/core/base";
 import "dotenv/config";
 import { StateFn } from "@covalenthq/ai-agent-sdk/dist/core/state";
-//@ts-expect-error Type exists in the openai package
+
 import type { ChatCompletionAssistantMessageParam } from "openai/resources";
 import { runToolCalls } from "./base";
 import axios from "axios";
@@ -25,18 +25,19 @@ export async function POST(req: NextRequest) {
       ipfsVideoLink: z.string().describe("IPFS link to the video for the ad"),
       totalFunded: z.string().describe("Total amount of funds provided for the ad"),
     }),
+    //@ts-expect-error
     execute: async ({ advertiser, name, description, ipfsVideoLink, totalFunded }) => {
       try {
-        // Logic to deploy the ad on the platform
-        // Example: Call a function on the smart contract to deploy the ad
         
-  
-        // Return the result of the ad deployment
+
+
+
+
         return {
           success: true,
           message: `Ad "${name}" ${advertiser} ${ipfsVideoLink} has been successfully deployed to the platform.`,
         };
-      } catch (error) {
+      } catch (error:any) {
         // Handle errors during deployment
         return {
           success: false,
