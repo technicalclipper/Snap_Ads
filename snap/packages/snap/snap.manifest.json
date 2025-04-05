@@ -1,13 +1,13 @@
 {
   "version": "0.1.0",
-  "description": "namma snap!",
-  "proposedName": "namma snap!",
+  "description": "Watch Ads and dont pay for gas",
+  "proposedName": "SnapAds",
   "repository": {
     "type": "git",
     "url": "https://github.com/MetaMask/template-snap-monorepo.git"
   },
   "source": {
-    "shasum": "pIlRDWHPLxe71s7m4uzv3rg1F1anteRpjPKvNxiBJ4Y=",
+    "shasum": "3iXjKpRCMuFMeOWShtd4iTQTcPI7rzdqE/Iy9Jd5VQI=",
     "location": {
       "npm": {
         "filePath": "dist/bundle.js",
@@ -21,10 +21,7 @@
     "endowment:rpc": {
       "dapps": true,
       "snaps": false
-    },
-    "endowment:transaction-insight": {},
-    "endowment:network-access": {},
-    "endowment:signature-insight": {}
+    }
   },
   "platformVersion": "6.18.0",
   "manifestVersion": "0.1"
