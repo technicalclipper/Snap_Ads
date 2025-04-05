@@ -18,28 +18,31 @@ async function main() {
 
   const [signer1] = await ethers.getSigners();
 
-  const FACTORY_NONCE = 1;
-
-  const sender = await ethers.getCreateAddress({
-    from: FACTORY_ADDRESS,
-    nonce: FACTORY_NONCE,
-  });
-
   const address0 = await signer1.getAddress();
 
   console.log("Wallet Address: ", address0);
 
-  const initCode =
+  let initCode =
     FACTORY_ADDRESS +
     AccountFactory.interface
       .encodeFunctionData("createAccount", [address0])
       .slice(2);
 
-  console.log("Smart Account Address: ", sender);
+  let sender;
 
-  await entryPoint.depositTo(PAYMASTER_ADDRESS, {
-    value: ethers.parseEther("100"),
-  });
+  try {
+    await entryPoint.getSenderAddress(initCode);
+  } catch (error: any) {
+    sender = "0x" + error.data.data.slice(-40);
+  }
+
+  const code = await ethers.provider.getCode(sender!);
+
+  if (code !== "0x") {
+    initCode = "0x";
+  }
+
+  console.log("Smart Account Address: ", sender);
 
   const registerAdSpotTx = await SnapAds.registerAdSpot(
     PAYMASTER_ADDRESS,
@@ -65,7 +68,7 @@ async function main() {
 
   console.log("✅ Ad spot registered and ad published - ", adId);
 
-  const watchedAdTx = await SnapAds.watchAd(adId, sender);
+  const watchedAdTx = await SnapAds.watchAd(adId, sender!);
   const watchedAdReceipt = await watchedAdTx.wait();
 
   console.log(watchedAdReceipt);
@@ -79,17 +82,17 @@ async function main() {
   );
 
   const userOp = {
-    sender: sender,
-    nonce: await entryPoint.getNonce(sender, 0),
+    sender: sender!,
+    nonce: await entryPoint.getNonce(sender!, 0),
     initCode,
     callData: Account.interface.encodeFunctionData("execute"),
+    paymasterAndData: PAYMASTER_ADDRESS + interactionData.slice(2),
+    signature: "0x",
     callGasLimit: 1_000_000, // 🔼 Increase
     verificationGasLimit: 1_000_000, // 🔼 Increase
     preVerificationGas: 50_000,
     maxFeePerGas: ethers.parseUnits("10", "gwei"),
     maxPriorityFeePerGas: ethers.parseUnits("5", "gwei"),
-    paymasterAndData: PAYMASTER_ADDRESS + interactionData.slice(2),
-    signature: "0x",
   };
 
   const userOpHash = await entryPoint.getUserOpHash(userOp);
