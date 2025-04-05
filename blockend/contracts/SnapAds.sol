@@ -4,7 +4,6 @@ pragma solidity ^0.8.20;
 contract SnapAds {
     address public owner;
     uint256 public adIdCounter;
-
     struct AdSpot {
         address contractAddress;
         string spotName;
@@ -52,7 +51,7 @@ contract SnapAds {
         string calldata spotName,
         string calldata description
     ) external {
-        require(!adSpots[contractAddress].isAvailable, "Already registered");
+        // require(!adSpots[contractAddress].isAvailable, "Already registered");
 
         adSpots[contractAddress] = AdSpot({
             contractAddress: contractAddress,
@@ -173,45 +172,57 @@ contract SnapAds {
         return adInteractions[adId].length;
     }
 
-    // function getAvailableAds()
-    //     external
-    //     view
-    //     returns (
-    //         uint256[] memory,
-    //         address[] memory,
-    //         string[] memory,
-    //         string[] memory,
-    //         string[] memory,
-    //         uint256[] memory
-    //     )
-    // {
-    //     uint256 count = 0;
-    //     for (uint256 i = 1; i <= adIdCounter; i++) {
-    //         if (ads[i].isActive) {
-    //             count++;
-    //         }
-    //     }
+    function getAvailableAds()
+        external
+        view
+        returns (
+            string[] memory,
+            address[] memory,
+            string[] memory,
+            string[] memory,
+            string[] memory,
+            uint256[] memory
+        )
+    {
+        uint256 totalAds = 0;
 
-    //     uint256[] memory ids = new uint256[](count);
-    //     address[] memory advertisers = new address[](count);
-    //     string[] memory names = new string[](count);
-    //     string[] memory descriptions = new string[](count);
-    //     string[] memory videoLinks = new string[](count);
-    //     uint256[] memory funds = new uint256[](count);
+        // First, count active ads
+        for (uint256 i = 0; i < adSpotList.length; i++) {
+            address adSpotAddr = adSpotList[i];
+            string[] memory adIds = advertiserAds[adSpotAddr];
+            for (uint256 j = 0; j < adIds.length; j++) {
+                if (ads[adIds[j]].isActive) {
+                    totalAds++;
+                }
+            }
+        }
 
-    //     uint256 index = 0;
-    //     for (uint256 i = 1; i <= adIdCounter; i++) {
-    //         if (ads[i].isActive) {
-    //             ids[index] = i;
-    //             advertisers[index] = ads[i].advertiser;
-    //             names[index] = ads[i].name;
-    //             descriptions[index] = ads[i].description;
-    //             videoLinks[index] = ads[i].ipfsVideoCID;
-    //             funds[index] = ads[i].totalFunded;
-    //             index++;
-    //         }
-    //     }
+        string[] memory ids = new string[](totalAds);
+        string[] memory names = new string[](totalAds);
+        string[] memory descriptions = new string[](totalAds);
+        string[] memory videoLinks = new string[](totalAds);
+        uint256[] memory funds = new uint256[](totalAds);
+        address[] memory adSpotAddresses = new address[](totalAds);
 
-    //     return (ids, advertisers, names, descriptions, videoLinks, funds);
-    // }
+        uint256 index = 0;
+
+        for (uint256 i = 0; i < adSpotList.length; i++) {
+            address adSpotAddr = adSpotList[i];
+            string[] memory adIds = advertiserAds[adSpotAddr];
+            for (uint256 j = 0; j < adIds.length; j++) {
+                Ad memory ad = ads[adIds[j]];
+                if (ad.isActive) {
+                    ids[index] = ad.id;
+                    names[index] = ad.name;
+                    descriptions[index] = ad.description;
+                    videoLinks[index] = ad.ipfsVideoCID;
+                    funds[index] = ad.totalFunded;
+                    adSpotAddresses[index] = ad.adSpotContract;
+                    index++;
+                }
+            }
+        }
+
+        return (ids, adSpotAddresses, names, descriptions, videoLinks, funds);
+    }
 }
