@@ -7,8 +7,12 @@ async function main() {
     ENTRYPOINT_ADDRESS
   );
 
+  await entryPoint.addStake(1000, {
+    value: ethers.parseEther("0.3"),
+  });
+
   await entryPoint.depositTo(PAYMASTER_ADDRESS, {
-    value: ethers.parseEther("1"),
+    value: ethers.parseEther("0.1"),
   });
 
   console.log("Deposit done");

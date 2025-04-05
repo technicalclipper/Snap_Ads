@@ -4,7 +4,7 @@ import "@nomicfoundation/hardhat-ignition";
 require("dotenv").config();
 
 const config: HardhatUserConfig = {
-  defaultNetwork: "polygon",
+  defaultNetwork: "arbitrum",
 
   networks: {
     arbitrum: {
