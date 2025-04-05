@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
       description:
         "You will receive a list of available ad spots and ad details. Your job is to use the bestadspot tool to select the most suitable ad spot and pass its contract address to the deployment tool.",
       instructions: [
+        "Must call the bestadspot-tool with the contract address of the best ad spot everytime.",
         "You will receive details of the advertisement and a list of available ad spots.",
         "Analyze the ad description and compare it with the ad spot descriptions.",
         "Choose the best ad spot and pass only the contract address of the chosen spot.",

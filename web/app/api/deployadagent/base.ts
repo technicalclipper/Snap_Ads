@@ -1,4 +1,4 @@
-//@ts-expect-error Type exists in the openai package
+
 import type { ChatCompletionToolMessageParam } from "openai/resources";
 import type { ParsedFunctionToolCall } from "openai/resources/beta/chat/completions";
 import { type ZodType } from "zod";
