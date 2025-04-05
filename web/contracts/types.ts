@@ -8,7 +8,6 @@ export interface SnapAdsContract extends BaseContract {
   ): Promise<any>;
   getAvailableAdSpots(): Promise<[string[], string[], string[]]>;
   publishAd(
-    adId: string,
     adSpotContract: string,
     name: string,
     description: string,

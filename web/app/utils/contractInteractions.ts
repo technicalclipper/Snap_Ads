@@ -67,7 +67,7 @@ export const publishAd = async (
       name,
       description,
       ipfsVideoCID,
-      valueInWei.toString()
+      { value: valueInWei }
     );
     await tx.wait();
     return true;
