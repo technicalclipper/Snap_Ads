@@ -27,11 +27,11 @@ export async function POST(req: NextRequest) {
     }),
     execute: async ({ advertiser, name, description, ipfsVideoLink, totalFunded }) => {
       try {
-        // Logic to deploy the ad on the platform
-        // Example: Call a function on the smart contract to deploy the ad
         
-  
-        // Return the result of the ad deployment
+        
+
+
+
         return {
           success: true,
           message: `Ad "${name}" ${advertiser} ${ipfsVideoLink} has been successfully deployed to the platform.`,
