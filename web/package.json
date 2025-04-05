@@ -12,13 +12,13 @@
     "@covalenthq/ai-agent-sdk": "^0.2.2",
     "@covalenthq/client-sdk": "^2.2.3",
     "axios": "^1.8.4",
+    "ethers": "^6.13.5",
     "next": "15.2.4",
+    "openai": "^4.83.0",
+    "pinata-web3": "^0.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "zod": "^3.24.2",
-    "ethers": "^6.13.5",
-    "openai": "^4.83.0"
-
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

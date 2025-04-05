@@ -7,6 +7,11 @@ const config: HardhatUserConfig = {
   defaultNetwork: "polygon",
 
   networks: {
+    arbitrum: {
+      url: process.env.ARBITRUM_RPC_URL || "",
+      accounts: [process.env.PRIVATE_KEY || ""],
+    },
+
     polygon: {
       url: process.env.POLYGON_RPC_URL || "",
       accounts: [process.env.PRIVATE_KEY || ""],

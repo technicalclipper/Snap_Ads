@@ -65,6 +65,7 @@ async function main() {
       value: ethers.parseEther("0.01"), // or whatever minimum is required
     }
   );
+  
   await publishAdTx.wait();
 
   console.log("✅ Ad spot registered and ad published - ", adId);
