@@ -58,18 +58,17 @@ export const publishAd = async (
   name: string,
   description: string,
   ipfsVideoCID: string,
-  fundAmount: string // in ETH
+  fundAmount: string
 ) => {
   try {
     const contract = await getContract(signer);
     const valueInWei = ethers.parseEther(fundAmount);
     const tx = await contract.publishAd(
-      adId,
       adSpotContract,
       name,
       description,
       ipfsVideoCID,
-      { value: valueInWei }
+      valueInWei.toString()
     );
     await tx.wait();
     return true;

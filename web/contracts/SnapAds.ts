@@ -13,15 +13,15 @@ export const CONTRACT_ABI = [
     inputs: [
       {
         indexed: true,
+        internalType: "uint256",
+        name: "adId",
+        type: "uint256",
+      },
+      {
+        indexed: true,
         internalType: "address",
         name: "advertiser",
         type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "string",
-        name: "adId",
-        type: "string",
       },
       {
         indexed: false,
@@ -32,7 +32,7 @@ export const CONTRACT_ABI = [
       {
         indexed: false,
         internalType: "string",
-        name: "ipfsVideoCID",
+        name: "ipfsVideoLink",
         type: "string",
       },
       {
@@ -55,10 +55,10 @@ export const CONTRACT_ABI = [
         type: "address",
       },
       {
-        indexed: false,
-        internalType: "string",
+        indexed: true,
+        internalType: "uint256",
         name: "adId",
-        type: "string",
+        type: "uint256",
       },
       {
         indexed: false,
@@ -69,65 +69,6 @@ export const CONTRACT_ABI = [
     ],
     name: "AdWatched",
     type: "event",
-  },
-  {
-    inputs: [
-      {
-        internalType: "string",
-        name: "",
-        type: "string",
-      },
-    ],
-    name: "ads",
-    outputs: [
-      {
-        internalType: "string",
-        name: "id",
-        type: "string",
-      },
-      {
-        internalType: "address",
-        name: "advertiser",
-        type: "address",
-      },
-      {
-        internalType: "string",
-        name: "name",
-        type: "string",
-      },
-      {
-        internalType: "string",
-        name: "description",
-        type: "string",
-      },
-      {
-        internalType: "string",
-        name: "ipfsVideoCID",
-        type: "string",
-      },
-      {
-        internalType: "uint256",
-        name: "totalFunded",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "spent",
-        type: "uint256",
-      },
-      {
-        internalType: "bool",
-        name: "isActive",
-        type: "bool",
-      },
-      {
-        internalType: "address",
-        name: "adSpotContract",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
   },
   {
     inputs: [],
@@ -145,9 +86,9 @@ export const CONTRACT_ABI = [
   {
     inputs: [
       {
-        internalType: "string",
+        internalType: "uint256",
         name: "",
-        type: "string",
+        type: "uint256",
       },
       {
         internalType: "uint256",
@@ -163,32 +104,13 @@ export const CONTRACT_ABI = [
         type: "address",
       },
       {
-        internalType: "string",
+        internalType: "uint256",
         name: "adId",
-        type: "string",
+        type: "uint256",
       },
       {
         internalType: "uint256",
         name: "timestamp",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "string",
-        name: "adId",
-        type: "string",
-      },
-    ],
-    name: "adInteractionsLength",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
         type: "uint256",
       },
     ],
@@ -251,6 +173,60 @@ export const CONTRACT_ABI = [
   {
     inputs: [
       {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    name: "ads",
+    outputs: [
+      {
+        internalType: "address",
+        name: "advertiser",
+        type: "address",
+      },
+      {
+        internalType: "string",
+        name: "name",
+        type: "string",
+      },
+      {
+        internalType: "string",
+        name: "description",
+        type: "string",
+      },
+      {
+        internalType: "string",
+        name: "ipfsVideoLink",
+        type: "string",
+      },
+      {
+        internalType: "uint256",
+        name: "totalFunded",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "spent",
+        type: "uint256",
+      },
+      {
+        internalType: "bool",
+        name: "isActive",
+        type: "bool",
+      },
+      {
+        internalType: "address",
+        name: "adSpotContract",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
         internalType: "address",
         name: "",
         type: "address",
@@ -264,9 +240,9 @@ export const CONTRACT_ABI = [
     name: "advertiserAds",
     outputs: [
       {
-        internalType: "string",
+        internalType: "uint256",
         name: "",
-        type: "string",
+        type: "uint256",
       },
     ],
     stateMutability: "view",
@@ -319,9 +295,9 @@ export const CONTRACT_ABI = [
     name: "getAvailableAds",
     outputs: [
       {
-        internalType: "string[]",
+        internalType: "uint256[]",
         name: "",
-        type: "string[]",
+        type: "uint256[]",
       },
       {
         internalType: "address[]",
@@ -387,11 +363,6 @@ export const CONTRACT_ABI = [
   {
     inputs: [
       {
-        internalType: "string",
-        name: "adId",
-        type: "string",
-      },
-      {
         internalType: "address",
         name: "adSpotContract",
         type: "address",
@@ -408,7 +379,7 @@ export const CONTRACT_ABI = [
       },
       {
         internalType: "string",
-        name: "ipfsVideoCID",
+        name: "ipfsVideoLink",
         type: "string",
       },
     ],
@@ -461,9 +432,9 @@ export const CONTRACT_ABI = [
   {
     inputs: [
       {
-        internalType: "string",
+        internalType: "uint256",
         name: "adId",
-        type: "string",
+        type: "uint256",
       },
       {
         internalType: "address",
