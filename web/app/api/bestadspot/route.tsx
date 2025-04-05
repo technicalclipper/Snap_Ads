@@ -40,11 +40,12 @@ export async function POST(req: NextRequest) {
         name: "gpt-4o-mini",
       },
       description:
-        "You will receive a list of available ad spots and ad details. Your job is to select the most suitable ad spot and pass its contract address to the deployment tool.",
+        "You will receive a list of available ad spots and ad details. Your job is to use the bestadspot tool to select the most suitable ad spot and pass its contract address to the deployment tool.",
       instructions: [
         "You will receive details of the advertisement and a list of available ad spots.",
         "Analyze the ad description and compare it with the ad spot descriptions.",
         "Choose the best ad spot and pass only the contract address of the chosen spot.",
+        "Must call the best ad spot tool with the contract address of the best ad spot.",
       ],
       tools: {
         "bestadspot-tool": bestadspotTool,
@@ -54,11 +55,11 @@ export async function POST(req: NextRequest) {
     const state = StateFn.root(adDeployAgent.description);
     state.messages.push(
       user(
-        `the first one is the ad details and the second one is the list of available ad spots. Choose the best ad spot and pass only the contract address of the chosen spot.call the best ad spot tool with the contract address of the best ad spot.
+        `the first one is the ad details and the second one is the list of available ad spots. Choose the best ad spot and pass only the contract address of the chosen spot.must call the bestadspot-tool with the contract address of the best ad spot.
             adDetails: {
               advertiser: "0x1234567890abcdef1234567890abcdef12345678",
-              name: "Uniswap New Token Launch",
-              description: "Introducing the new token on Uniswap. Don’t miss out on the opportunity to invest early and benefit from exclusive rewards.",
+              name: "Oneinch New Token Launch",
+              description: "Introducing the new token on oneInch. Don’t miss out on the opportunity to invest early and benefit from exclusive rewards.",
               ipfsVideoLink: "ipfs://Qmdj0F7P74ZmRBNmZ7uX2q8di2XyzA5jmE3zYBzXfhFQG8",
               totalFunded: 5000
             },
@@ -82,6 +83,7 @@ export async function POST(req: NextRequest) {
                 isAvailable: false
               }
             ]
+              the bestadspot-tool must be called.
           `
       )
     );
