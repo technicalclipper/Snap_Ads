@@ -1,16 +1,24 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Card } from "@/app/components/Card";
 
 interface AdVideoPlayerProps {
   videoUrl: string;
+  onWatchComplete?: () => void;
 }
 
-export default function AdVideoPlayer({ videoUrl }: AdVideoPlayerProps) {
+export default function AdVideoPlayer({
+  videoUrl,
+  onWatchComplete,
+}: AdVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [maxWatchedTime, setMaxWatchedTime] = useState(0);
   const [watchStartTime, setWatchStartTime] = useState<number | null>(null);
   const [totalWatched, setTotalWatched] = useState(0);
+  const [watchStatus, setWatchStatus] = useState<
+    "none" | "incomplete" | "complete"
+  >("none");
 
   useEffect(() => {
     const video = videoRef.current;
@@ -35,7 +43,7 @@ export default function AdVideoPlayer({ videoUrl }: AdVideoPlayerProps) {
     const handlePause = () => {
       if (watchStartTime) {
         const watched = (Date.now() - watchStartTime) / 1000;
-        setTotalWatched(prev => prev + watched);
+        setTotalWatched((prev) => prev + watched);
         setWatchStartTime(null);
       }
     };
@@ -47,10 +55,10 @@ export default function AdVideoPlayer({ videoUrl }: AdVideoPlayerProps) {
       const watchedRatio = totalWatched / duration;
 
       if (watchedRatio >= 0.98) {
-        alert("✅ Full ad watched! You'll be reimbursed.");
-        // TODO: Notify backend
+        setWatchStatus("complete");
+        onWatchComplete?.();
       } else {
-        alert("⚠️ You must watch the full ad without skipping.");
+        setWatchStatus("incomplete");
       }
     };
 
@@ -67,18 +75,39 @@ export default function AdVideoPlayer({ videoUrl }: AdVideoPlayerProps) {
       video.removeEventListener("pause", handlePause);
       video.removeEventListener("ended", handleEnded);
     };
-  }, [maxWatchedTime, watchStartTime, totalWatched]);
+  }, [maxWatchedTime, watchStartTime, totalWatched, onWatchComplete]);
 
   return (
-    <div className="max-w-xl mx-auto">
-      <video
-        ref={videoRef}
-        src={videoUrl}
-        controls
-        controlsList="nodownload noplaybackrate"
-        disablePictureInPicture
-        className="w-full rounded shadow"
-      />
-    </div>
+    <Card className="max-w-4xl mx-auto">
+      <div className="aspect-video bg-black rounded-lg overflow-hidden mb-4">
+        <video
+          ref={videoRef}
+          src={videoUrl}
+          controls
+          controlsList="nodownload noplaybackrate"
+          disablePictureInPicture
+          className="w-full h-full"
+        />
+      </div>
+
+      <div className="space-y-4 p-4">
+        <p className="text-sm text-gray-500">
+          Watch the entire video without skipping to record your interaction
+        </p>
+
+        {watchStatus === "complete" && (
+          <div className="bg-green-100 text-green-800 p-4 rounded-md">
+            ✓ Watch recorded successfully! You'll be reimbursed.
+          </div>
+        )}
+
+        {watchStatus === "incomplete" && (
+          <div className="bg-yellow-100 text-yellow-800 p-4 rounded-md">
+            ⚠️ You must watch the full ad without skipping to receive
+            reimbursement.
+          </div>
+        )}
+      </div>
+    </Card>
   );
 }

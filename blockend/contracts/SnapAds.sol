@@ -162,18 +162,6 @@ contract SnapAds {
     // Getters
     // =========================
 
-    function getAdDetails(uint256 adId) external view returns (
-        address advertiser,
-        string memory name,
-        string memory description,
-        string memory ipfsVideoLink,
-        uint256 totalFunded,
-        uint256 spent,
-        bool isActive
-    ){
-        Ad memory ad = ads[adId];
-        return (ad.advertiser, ad.name, ad.description, ad.ipfsVideoLink, ad.totalFunded, ad.spent, ad.isActive);
-    }
 
     function getAvailableAds() external view returns (
         uint256[] memory, 

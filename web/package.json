@@ -12,6 +12,8 @@
     "@covalenthq/ai-agent-sdk": "^0.2.2",
     "@covalenthq/client-sdk": "^2.2.3",
     "@radix-ui/react-slot": "^1.1.2",
+    "@worldcoin/idkit": "^1.2.2",
+    "@worldcoin/idkit-core": "^1.2.2",
     "axios": "^1.8.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -25,6 +27,8 @@
     "react-dom": "^19.0.0",
     "tailwind-merge": "^3.1.0",
     "tw-animate-css": "^1.2.5",
+    "viem": "^2.25.0",
+    "wagmi": "^2.14.16",
     "zod": "^3.24.2"
   },
   "devDependencies": {

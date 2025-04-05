@@ -37,6 +37,8 @@ export default function AdvertiserPage() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [adSpots, setAdSpots] = useState<AdSpot[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [publishMode, setPublishMode] = useState<"manual" | "agent">("manual");
+  const [userAddress, setUserAddress] = useState<string>("");
 
   // Form states
   const [spotName, setSpotName] = useState("");
@@ -48,6 +50,22 @@ export default function AdvertiserPage() {
   const [fundAmount, setFundAmount] = useState("");
   const [spotAddress, setSpotAddress] = useState("");
 
+  // Get user's address on component mount
+  useEffect(() => {
+    const getAddress = async () => {
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+        setUserAddress(address);
+      } catch (err) {
+        console.error("Error getting address:", err);
+        setError("Failed to get wallet address");
+      }
+    };
+    getAddress();
+  }, []);
+
   // Load ad spots
   useEffect(() => {
     const loadAdSpots = async () => {
@@ -55,10 +73,11 @@ export default function AdvertiserPage() {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         const spots = await getAvailableAdSpots(signer);
+        console.log(spots);
         setAdSpots(spots);
       } catch (err) {
-        console.error("Error loading ad spots:", err);
-        setError("Failed to load ad spots");
+        // console.error("Error loading ad spots:", err);
+        // setError("Failed to load ad spots");
       }
     };
 
@@ -97,8 +116,14 @@ export default function AdvertiserPage() {
     setIsPublishing(true);
     setError(null);
 
-    if (!selectedFile || !selectedSpot) {
-      setError("Please select a file and ad spot");
+    if (!selectedFile || !adTitle || !adDescription || !fundAmount) {
+      setError("Please fill in all required fields");
+      setIsPublishing(false);
+      return;
+    }
+
+    if (!userAddress) {
+      setError("Please connect your wallet");
       setIsPublishing(false);
       return;
     }
@@ -136,25 +161,54 @@ export default function AdvertiserPage() {
 
       const data = await response.json();
 
-      // Now publish the ad to the blockchain
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
+      if (publishMode === "agent") {
+        // Use AI agent to select best ad spot
+        const agentResponse = await fetch("/api/deployadagent", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            advertiser: userAddress,
+            name: adTitle,
+            description: adDescription,
+            ipfsVideoLink: data.cid,
+            totalFunded: fundAmount,
+          }),
+        });
 
-      await publishAd(
-        signer,
-        selectedSpot,
-        adTitle,
-        adDescription,
-        data.cid,
-        fundAmount
-      );
+        if (!agentResponse.ok) {
+          throw new Error("Failed to get AI agent recommendation");
+        }
 
-      // Reset form
-      setAdTitle("");
-      setAdDescription("");
-      setSelectedFile(null);
-      setSelectedSpot("");
-      setFundAmount("");
+        // The agent has already published the ad
+        setAdTitle("");
+        setAdDescription("");
+        setSelectedFile(null);
+        setFundAmount("");
+        setSelectedSpot("");
+      } else {
+        // Manual publishing
+        // Now publish the ad to the blockchain
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+
+        await publishAd(
+          signer,
+          selectedSpot,
+          adTitle,
+          adDescription,
+          data.cid,
+          fundAmount
+        );
+
+        // Reset form
+        setAdTitle("");
+        setAdDescription("");
+        setSelectedFile(null);
+        setSelectedSpot("");
+        setFundAmount("");
+      }
     } catch (err) {
       console.error("Error publishing ad:", err);
       setError("Failed to publish ad");
@@ -277,6 +331,43 @@ export default function AdvertiserPage() {
               </h2>
               <form onSubmit={handlePublishAd} className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-2">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      Publishing Mode
+                    </label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setPublishMode("manual")}
+                        className={`p-4 rounded-lg border-2 ${
+                          publishMode === "manual"
+                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                            : "border-slate-200 dark:border-slate-700"
+                        } transition-colors`}
+                      >
+                        <h3 className="font-semibold mb-2">
+                          Manual Publishing
+                        </h3>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                          Choose your ad spot manually
+                        </p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPublishMode("agent")}
+                        className={`p-4 rounded-lg border-2 ${
+                          publishMode === "agent"
+                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                            : "border-slate-200 dark:border-slate-700"
+                        } transition-colors`}
+                      >
+                        <h3 className="font-semibold mb-2">AI Agent</h3>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                          Let AI choose the best ad spot
+                        </p>
+                      </button>
+                    </div>
+                  </div>
                   <Input
                     label="Title"
                     placeholder="Enter ad title"
@@ -300,20 +391,22 @@ export default function AdvertiserPage() {
                     value={fundAmount}
                     onChange={(e) => setFundAmount(e.target.value)}
                   />
-                  <Select
-                    label="Ad Spot"
-                    value={selectedSpot}
-                    onChange={(e) => setSelectedSpot(e.target.value)}
-                    options={[
-                      { value: "", label: "Select an ad spot" },
-                      ...adSpots.map((spot) => ({
-                        value: spot.contractAddress,
-                        label: spot.spotName,
-                      })),
-                    ]}
-                    required
-                  />
-                  <div className="col-span-2">
+                  {publishMode === "manual" && (
+                    <Select
+                      label="Ad Spot"
+                      value={selectedSpot}
+                      onChange={(e) => setSelectedSpot(e.target.value)}
+                      options={[
+                        { value: "", label: "Select an ad spot" },
+                        ...adSpots.map((spot) => ({
+                          value: spot.contractAddress,
+                          label: spot.spotName,
+                        })),
+                      ]}
+                      required
+                    />
+                  )}
+                  <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                       Video
                     </label>
@@ -342,16 +435,18 @@ export default function AdvertiserPage() {
                 <Button
                   type="submit"
                   isLoading={isPublishing}
-                  leftIcon={<Upload className="h-5 w-5" />}
+                  leftIcon={<Upload className="w-5 h-5" />}
                   disabled={
                     !selectedFile ||
-                    !selectedSpot ||
                     !adTitle ||
                     !adDescription ||
-                    !fundAmount
+                    !fundAmount ||
+                    (publishMode === "manual" && !selectedSpot)
                   }
                 >
-                  Publish Ad
+                  {publishMode === "agent"
+                    ? "Publish with AI Agent"
+                    : "Publish Ad"}
                 </Button>
               </form>
             </Card>
