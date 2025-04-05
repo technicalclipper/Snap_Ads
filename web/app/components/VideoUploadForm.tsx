@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useSnapAds } from "../../hooks/useSnapAds";
+
+interface AdSpot {
+  contractAddress: string;
+  spotName: string;
+  description: string;
+}
 
 interface VideoUploadFormProps {}
 
@@ -9,7 +16,27 @@ const VideoUploadForm: React.FC<VideoUploadFormProps> = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [adSpots, setAdSpots] = useState<AdSpot[]>([]);
+  const [selectedSpot, setSelectedSpot] = useState<string>("");
+  const [adName, setAdName] = useState<string>("");
+  const [adDescription, setAdDescription] = useState<string>("");
+  const [fundAmount, setFundAmount] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const {
+    isLoading: contractLoading,
+    error: contractError,
+    getAvailableAdSpots,
+    publishAd,
+  } = useSnapAds();
+
+  useEffect(() => {
+    const loadAdSpots = async () => {
+      const spots = await getAvailableAdSpots();
+      setAdSpots(spots);
+    };
+    loadAdSpots();
+  }, [getAvailableAdSpots]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -33,7 +60,16 @@ const VideoUploadForm: React.FC<VideoUploadFormProps> = () => {
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) return;
+    if (
+      !selectedFile ||
+      !selectedSpot ||
+      !adName ||
+      !adDescription ||
+      !fundAmount
+    ) {
+      setError("Please fill in all fields");
+      return;
+    }
 
     try {
       setUploading(true);
@@ -72,9 +108,27 @@ const VideoUploadForm: React.FC<VideoUploadFormProps> = () => {
       const data = await response.json();
       console.log("Upload successful:", data);
 
+      // Publish ad to blockchain
+      const success = await publishAd(
+        adID,
+        selectedSpot,
+        adName,
+        adDescription,
+        data.ipfsCID,
+        fundAmount
+      );
+
+      if (!success) {
+        throw new Error("Failed to publish ad to blockchain");
+      }
+
       // Reset form
       setSelectedFile(null);
       setPreviewUrl(null);
+      setAdName("");
+      setAdDescription("");
+      setFundAmount("");
+      setSelectedSpot("");
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -88,6 +142,69 @@ const VideoUploadForm: React.FC<VideoUploadFormProps> = () => {
 
   return (
     <div className="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
+      <div className="mb-6">
+        <label className="block text-gray-700 text-sm font-bold mb-2">
+          Select Ad Spot
+        </label>
+        <select
+          value={selectedSpot}
+          onChange={(e) => setSelectedSpot(e.target.value)}
+          className="w-full p-2 border rounded-md"
+          disabled={uploading || contractLoading}
+        >
+          <option value="">Select an ad spot</option>
+          {adSpots.map((spot) => (
+            <option key={spot.contractAddress} value={spot.contractAddress}>
+              {spot.spotName} - {spot.description}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="mb-6">
+        <label className="block text-gray-700 text-sm font-bold mb-2">
+          Ad Name
+        </label>
+        <input
+          type="text"
+          value={adName}
+          onChange={(e) => setAdName(e.target.value)}
+          className="w-full p-2 border rounded-md"
+          disabled={uploading}
+          placeholder="Enter ad name"
+        />
+      </div>
+
+      <div className="mb-6">
+        <label className="block text-gray-700 text-sm font-bold mb-2">
+          Ad Description
+        </label>
+        <textarea
+          value={adDescription}
+          onChange={(e) => setAdDescription(e.target.value)}
+          className="w-full p-2 border rounded-md"
+          disabled={uploading}
+          placeholder="Enter ad description"
+          rows={3}
+        />
+      </div>
+
+      <div className="mb-6">
+        <label className="block text-gray-700 text-sm font-bold mb-2">
+          Fund Amount (ETH)
+        </label>
+        <input
+          type="number"
+          value={fundAmount}
+          onChange={(e) => setFundAmount(e.target.value)}
+          className="w-full p-2 border rounded-md"
+          disabled={uploading}
+          placeholder="Enter amount in ETH"
+          step="0.01"
+          min="0"
+        />
+      </div>
+
       <div className="mb-6">
         <label className="block text-gray-700 text-sm font-bold mb-2">
           Upload Video
@@ -107,7 +224,11 @@ const VideoUploadForm: React.FC<VideoUploadFormProps> = () => {
         />
       </div>
 
-      {error && <div className="mb-4 text-red-500 text-sm">{error}</div>}
+      {(error || contractError) && (
+        <div className="mb-4 text-red-500 text-sm">
+          {error || contractError}
+        </div>
+      )}
 
       {previewUrl && (
         <div className="mb-6">
@@ -123,15 +244,31 @@ const VideoUploadForm: React.FC<VideoUploadFormProps> = () => {
 
       <button
         onClick={handleUpload}
-        disabled={!selectedFile || uploading}
+        disabled={
+          !selectedFile ||
+          uploading ||
+          contractLoading ||
+          !selectedSpot ||
+          !adName ||
+          !adDescription ||
+          !fundAmount
+        }
         className={`w-full bg-blue-500 text-white py-2 px-4 rounded-md
           font-semibold ${
-            !selectedFile || uploading
+            !selectedFile ||
+            uploading ||
+            contractLoading ||
+            !selectedSpot ||
+            !adName ||
+            !adDescription ||
+            !fundAmount
               ? "opacity-50 cursor-not-allowed"
               : "hover:bg-blue-600"
           }`}
       >
-        {uploading ? "Uploading..." : "Upload to Pinata"}
+        {uploading || contractLoading
+          ? "Processing..."
+          : "Publish Advertisement"}
       </button>
     </div>
   );
