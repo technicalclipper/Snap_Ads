@@ -53,7 +53,6 @@ export const getAvailableAdSpots = async (signer: ethers.Signer) => {
 // Publish an ad
 export const publishAd = async (
   signer: ethers.Signer,
-  adId: string,
   adSpotContract: string,
   name: string,
   description: string,

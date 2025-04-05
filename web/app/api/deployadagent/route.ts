@@ -29,6 +29,79 @@ export async function POST(req: NextRequest) {
     execute: async ({ advertiser, name, description, ipfsVideoLink, totalFunded }) => {
       try {
         
+        const chain = 'ethereum'; 
+        const addressOrAlias = '0xE725334BaC4fecBa0f636B1aEE0586227A894049'; 
+        const contract = 'snapads'; 
+        const method = 'getAvailableAdSpots';
+        const hostname = 'fqzb6ixmnre3xn6d474wfze7z4.multibaas.com'; 
+
+        const url = `https://${hostname}/api/v0/chains/${chain}/addresses/${addressOrAlias}/contracts/${contract}/methods/${method}`;
+
+        console.log('Calling:', url); 
+
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${process.env.MULTIBAAS_API_KEY}`,
+          },
+          body: JSON.stringify({
+            from: '0x103b80411d5907d6741fDDd69E9A7dE254Ab6C11', 
+          })
+        });
+        const data = await resp.json();
+       
+
+        const bestAdSpot = await fetch("http://localhost:3000/api/bestadspot", {
+          method: "POST", 
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body:JSON.stringify({
+            adDetails:{
+              advertiser: advertiser,
+              name: name,
+              description: description,
+              ipfsVideoLink: ipfsVideoLink,
+              totalFunded: totalFunded,
+            },
+            adspots: data.result.output, 
+          })
+        });
+
+        const bestadspotaddress=bestAdSpot.json();
+        const bestadspotaddress1="0x95597673e080113666D03eb1ec1579cA8056cc7C";
+
+        const chain1 = 'ethereum'; 
+        const addressOrAlias1 = '0xE725334BaC4fecBa0f636B1aEE0586227A894049'; 
+        const contract1 = 'snapads'; 
+        const method1 = 'publishAd';
+        const hostname1 = 'fqzb6ixmnre3xn6d474wfze7z4.multibaas.com'; 
+
+        const url1 = `https://${hostname1}/api/v0/chains/${chain1}/addresses/${addressOrAlias1}/contracts/${contract1}/methods/${method1}`;
+
+        console.log('Calling:', url1); 
+
+        const resp1 = await fetch(url1, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiaWF0IjoxNzQzODI5NDk1LCJqdGkiOiJjMjYxYTk3ZS1iNWQxLTQ1YTQtOGJhYS0wZWI2YjFhNzQ3MDgifQ.2HS-EmxcCgBy_dMZh3hBFoZoSyEk_RmsQgPpgrTAivo`,
+          },
+          body: JSON.stringify({
+            args:[bestadspotaddress1,name,description,ipfsVideoLink],
+            from: '0x103b80411d5907d6741fDDd69E9A7dE254Ab6C11', 
+            value: '1000000000000000',
+            signAndSubmit: true,
+
+          })
+        });
+        
+
+      
+          
+
+
 
 
 
@@ -71,7 +144,7 @@ export async function POST(req: NextRequest) {
 const state = StateFn.root(adDeployAgent.description);
     state.messages.push(
       user(
-       // "advertiser address: 0x1234567890abcdef1234567890abcdef12345678, ad name: 'My Ad', description: 'This is a test ad', IPFS video link: 'ipfs://Qm...', total funds: '1000000000000000000'"
+        "advertiser address: 0x1234567890abcdef1234567890abcdef12345678, ad name: 'Bru', description: 'This is a cofee ad', IPFS video link: 'ipfs://coffee.bru', total funds: '1000000000000000000'"
         //message!
       )
     );

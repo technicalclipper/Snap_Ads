@@ -135,18 +135,17 @@ export default function AdvertiserPage() {
       }
 
       const data = await response.json();
-
+      console.log("Uploaded to Pinata:", data);
       // Now publish the ad to the blockchain
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
 
       await publishAd(
         signer,
-        adID,
         selectedSpot,
         adTitle,
         adDescription,
-        data.ipfsCID,
+        data.cid,
         fundAmount
       );
 
