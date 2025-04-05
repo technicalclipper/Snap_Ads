@@ -11,11 +11,14 @@ contract Paymaster is IPaymaster {
         bytes32,
         uint256
     ) external pure returns (bytes memory context, uint256 validationData) {
+        bool allowed = false;
+
+        if (!allowed) {
+            validationData = uint256(1) << 160;
+        } else {
+            validationData = 0;
+        }
         context = new bytes(0);
-
-        uint256 validatetionData;
-
-        return (context, validationData);
     }
 
     function postOp(
