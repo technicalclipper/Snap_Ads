@@ -21,7 +21,7 @@ export const onTransaction: OnTransactionHandler = async ({ transaction }) => {
         <Heading>New One Inch Token</Heading>
         <Text>Very low gas fee, try it out!</Text>
         <Text>
-          Watch the Ad at <Link href="https://docs.metamask.io">Coca-Cola</Link>.
+          Watch the Ad at <Link href="https://docs.metamask.io">One Inch</Link>.
         </Text>
       </Box>
     ),

@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const inputAddress = body.toaddress.toLowerCase(); // fix typo here (was toaddress)
   const chain = "ethereum";
-  const addressOrAlias = "0xE725334BaC4fecBa0f636B1aEE0586227A894049";
+  const addressOrAlias = "0xAe4600e84007d49Cf3f45fFBA57D1EC156EA75cE";
   const contract = "snapads";
   const method = "getAvailableAds";
   const hostname = "fqzb6ixmnre3xn6d474wfze7z4.multibaas.com";
