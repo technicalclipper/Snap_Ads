@@ -136,13 +136,14 @@ export default function AdvertiserPage() {
 
       const data = await response.json();
 
+      console.log(data);
+
       // Now publish the ad to the blockchain
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
 
       await publishAd(
         signer,
-        adID,
         selectedSpot,
         adTitle,
         adDescription,

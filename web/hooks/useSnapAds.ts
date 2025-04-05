@@ -40,7 +40,6 @@ export const useSnapAds = () => {
   };
 
   const handlePublishAd = async (
-    adId: string,
     adSpotContract: string,
     name: string,
     description: string,
@@ -53,7 +52,6 @@ export const useSnapAds = () => {
       const signer = await getSigner();
       await publishAd(
         signer,
-        adId,
         adSpotContract,
         name,
         description,
