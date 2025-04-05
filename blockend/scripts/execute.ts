@@ -1,12 +1,13 @@
 import { ethers } from "hardhat";
 import { v4 as uuidv4 } from "uuid";
+import {
+  ENTRYPOINT_ADDRESS,
+  FACTORY_ADDRESS,
+  SNAPADS_ADDRESS,
+  PAYMASTER_ADDRESS,
+} from "./addresses";
 
 async function main() {
-  const ENTRYPOINT_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
-  const FACTORY_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-  const SNAPADS_ADDRESS = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
-  const PAYMASTER_ADDRESS = "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9";
-
   const entryPoint = await ethers.getContractAt(
     "EntryPoint",
     ENTRYPOINT_ADDRESS
@@ -16,9 +17,9 @@ async function main() {
   const AccountFactory = await ethers.getContractFactory("AccountFactory");
   const Account = await ethers.getContractFactory("Account");
 
-  const [signer1] = await ethers.getSigners();
+  const [signer0] = await ethers.getSigners();
 
-  const address0 = await signer1.getAddress();
+  const address0 = await signer0.getAddress();
 
   console.log("Wallet Address: ", address0);
 
@@ -33,7 +34,7 @@ async function main() {
   try {
     await entryPoint.getSenderAddress(initCode);
   } catch (error: any) {
-    sender = "0x" + error.data.data.slice(-40);
+    sender = "0x" + error.data.slice(-40);
   }
 
   const code = await ethers.provider.getCode(sender!);
@@ -45,7 +46,7 @@ async function main() {
   console.log("Smart Account Address: ", sender);
 
   const registerAdSpotTx = await SnapAds.registerAdSpot(
-    PAYMASTER_ADDRESS,
+    ENTRYPOINT_ADDRESS,
     "Signer2 Ad Spot",
     "Spot for signer2 advertisers"
   );
@@ -56,7 +57,7 @@ async function main() {
 
   const publishAdTx = await SnapAds.publishAd(
     adId,
-    PAYMASTER_ADDRESS,
+    ENTRYPOINT_ADDRESS,
     "Signer2 Ad Title",
     "Signer2 ad description",
     "https://video.com/signer2",
@@ -64,6 +65,7 @@ async function main() {
       value: ethers.parseEther("0.01"), // or whatever minimum is required
     }
   );
+  
   await publishAdTx.wait();
 
   console.log("✅ Ad spot registered and ad published - ", adId);
@@ -81,29 +83,71 @@ async function main() {
     [sender, adId]
   );
 
+  console.log("Interaction Data: ");
+  console.log(interactionData);
+
   const userOp = {
     sender: sender!,
-    nonce: await entryPoint.getNonce(sender!, 0),
+    nonce: "0x" + (await entryPoint.getNonce(sender!, 0)).toString(16),
     initCode,
     callData: Account.interface.encodeFunctionData("execute"),
     paymasterAndData: PAYMASTER_ADDRESS + interactionData.slice(2),
-    signature: "0x",
-    callGasLimit: 1_000_000, // 🔼 Increase
-    verificationGasLimit: 1_000_000, // 🔼 Increase
-    preVerificationGas: 50_000,
-    maxFeePerGas: ethers.parseUnits("10", "gwei"),
-    maxPriorityFeePerGas: ethers.parseUnits("5", "gwei"),
+    signature:
+      "0xfffffffffffffffffffffffffffffff0000000000000000000000000000000007aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1c",
   };
 
-  const userOpHash = await entryPoint.getUserOpHash(userOp);
-  userOp.signature = await signer1.signMessage(ethers.getBytes(userOpHash));
+  console.log("User Operation");
+  console.log(userOp);
 
-  const tx = await entryPoint.handleOps([userOp], address0);
-  const receipt = await tx.wait();
-  console.log(receipt);
+  const { preVerificationGas, verificationGasLimit, callGasLimit } =
+    await ethers.provider.send("eth_estimateUserOperationGas", [
+      userOp,
+      ENTRYPOINT_ADDRESS,
+    ]);
+
+  console.log(preVerificationGas);
+  console.log(verificationGasLimit);
+  console.log(callGasLimit);
+
+  const { maxFeePerGas } = await ethers.provider.getFeeData();
+
+  const maxPriorityFeePerGas = await ethers.provider.send(
+    "rundler_maxPriorityFeePerGas"
+  );
+
+  const newUserOp = {
+    sender: sender!,
+    nonce: "0x" + (await entryPoint.getNonce(sender!, 0)).toString(16),
+    initCode,
+    callData: Account.interface.encodeFunctionData("execute"),
+    paymasterAndData: PAYMASTER_ADDRESS + interactionData.slice(2),
+    signature:
+      "0xfffffffffffffffffffffffffffffff0000000000000000000000000000000007aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1c",
+    callGasLimit: callGasLimit,
+    preVerificationGas: preVerificationGas,
+    verificationGasLimit: verificationGasLimit,
+    maxFeePerGas: "0x" + maxFeePerGas?.toString(16),
+    maxPriorityFeePerGas: maxPriorityFeePerGas,
+  };
+
+  console.log(newUserOp);
+
+  const userOpHash = await entryPoint.getUserOpHash(newUserOp);
+  newUserOp.signature = await signer0.signMessage(ethers.getBytes(userOpHash));
+
+  const opHash = await ethers.provider.send("eth_sendUserOperation", [
+    newUserOp,
+    ENTRYPOINT_ADDRESS,
+  ]);
+
+  console.log(opHash);
 }
 
 main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
+
+function toHex(num: number | bigint) {
+  return "0x" + BigInt(num).toString(16);
+}
