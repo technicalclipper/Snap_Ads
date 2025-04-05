@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
 const state = StateFn.root(adDeployAgent.description);
     state.messages.push(
       user(
-        "advertiser address: 0x1234567890abcdef1234567890abcdef12345678, ad name: 'My Ad', description: 'This is a test ad', IPFS video link: 'ipfs://Qm...', total funds: '1000000000000000000'"
+       // "advertiser address: 0x1234567890abcdef1234567890abcdef12345678, ad name: 'My Ad', description: 'This is a test ad', IPFS video link: 'ipfs://Qm...', total funds: '1000000000000000000'"
         //message!
       )
     );
@@ -101,7 +101,7 @@ const state = StateFn.root(adDeployAgent.description);
     });
 
     
-  
+    
  
   }
   
