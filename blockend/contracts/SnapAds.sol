@@ -1,109 +1,83 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-contract SnapAds {
+contract AdPlatform {
     address public owner;
     uint256 public adIdCounter;
 
-    // Struct for ad details
+    struct AdSpot {
+        address contractAddress;
+        string spotName;
+        string description;
+        bool isAvailable;
+    }
+
     struct Ad {
         address advertiser;
         string name;
         string description;
-        string ipfsVideoCID;
+        string ipfsVideoLink;
         uint256 totalFunded;
         uint256 spent;
         bool isActive;
         address adSpotContract;
     }
-    struct AdSpot {
-        address contractAddress;
-        string spotName;
-        bool isAvailable;
-    }
 
-    // Struct to store user interaction details
     struct Interaction {
         address user;
         uint256 adId;
         uint256 timestamp;
     }
 
-    // Mappings to store data
-    mapping(address => AdSpot) public adSpots; // contractAddress => AdSpot details
-    mapping(uint256 => Ad) public ads; // adId => Ad details
-    mapping(address => uint256[]) public advertiserAds; // advertiser address => list of adIds
-    mapping(address => uint256) public advertiserBalances; // address -> balance
-    mapping(uint256 => Interaction[]) public adInteractions; // adId => list of user interactions
+    mapping(address => AdSpot) public adSpots;
+    mapping(uint256 => Ad) public ads;
+    mapping(address => uint256[]) public advertiserAds;
+    mapping(address => uint256) public advertiserBalances;
+    mapping(uint256 => Interaction[]) public adInteractions;
 
     address[] public adSpotList;
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Not owner");
-        _;
-    }
-
     constructor() {
         owner = msg.sender;
+        adIdCounter = 0;
     }
 
-    // ===============================
-    // Events
-    // ===============================
-    
-    event AdWatched(
-        address indexed user,
-        uint256 indexed adId,
-        uint256 timestamp
-    );
-
-    event AdPublished(
-        uint256 indexed adId,
-        address indexed advertiser,
-        string name,
-        string ipfsVideoLink,
-        uint256 amount
-    );
-
-    // ===============================
-    // Ad Spot Registration (Contract Owners)
-    // ===============================
+    // =========================
+    // Ad Spot Registration
+    // =========================
 
     function registerAdSpot(
         address contractAddress,
-        string calldata spotName
-    ) external onlyOwner {
+        string calldata spotName,
+        string calldata description
+    ) external {
         require(!adSpots[contractAddress].isAvailable, "Already registered");
 
         adSpots[contractAddress] = AdSpot({
             contractAddress: contractAddress,
             spotName: spotName,
+            description: description,
             isAvailable: true
         });
 
         adSpotList.push(contractAddress);
     }
 
-    function updateAdSpotAvailability(
-        address contractAddress,
-        bool availability
-    ) external onlyOwner {
+    function updateAdSpotAvailability(address contractAddress, bool availability) external {
+        require(msg.sender == owner, "Only owner can update availability");
         adSpots[contractAddress].isAvailable = availability;
     }
 
-    function isAdSpotAvailable(
-        address contractAddress
-    ) external view returns (bool) {
+    function isAdSpotAvailable(address contractAddress) external view returns (bool) {
         return adSpots[contractAddress].isAvailable;
     }
 
-    function getAvailableAdSpots()
-        external
-        view
-        returns (address[] memory, string[] memory)
-    {
+    function getAvailableAdSpots() external view returns (
+        address[] memory,
+        string[] memory,
+        string[] memory
+    ) {
         uint256 count = 0;
-
         for (uint256 i = 0; i < adSpotList.length; i++) {
             if (adSpots[adSpotList[i]].isAvailable) {
                 count++;
@@ -112,28 +86,30 @@ contract SnapAds {
 
         address[] memory addresses = new address[](count);
         string[] memory names = new string[](count);
+        string[] memory descriptions = new string[](count);
 
         uint256 index = 0;
         for (uint256 i = 0; i < adSpotList.length; i++) {
             if (adSpots[adSpotList[i]].isAvailable) {
                 addresses[index] = adSpots[adSpotList[i]].contractAddress;
                 names[index] = adSpots[adSpotList[i]].spotName;
+                descriptions[index] = adSpots[adSpotList[i]].description;
                 index++;
             }
         }
 
-        return (addresses, names);
+        return (addresses, names, descriptions);
     }
 
-    // ================================
-    // Ad Publishing (Advertisers)
-    // ================================
+    // =========================
+    // Ad Publishing
+    // =========================
 
     function publishAd(
         address adSpotContract,
         string calldata name,
         string calldata description,
-        string calldata ipfsVideoCID
+        string calldata ipfsVideoLink
     ) external payable {
         require(adSpots[adSpotContract].isAvailable, "Ad spot not available");
         require(msg.value > 0, "Must send funds to publish ad");
@@ -145,7 +121,7 @@ contract SnapAds {
             advertiser: msg.sender,
             name: name,
             description: description,
-            ipfsVideoCID: ipfsVideoCID,
+            ipfsVideoLink: ipfsVideoLink,
             totalFunded: msg.value,
             spent: 0,
             isActive: true,
@@ -155,45 +131,48 @@ contract SnapAds {
         advertiserAds[msg.sender].push(newAdId);
         advertiserBalances[msg.sender] += msg.value;
 
-        emit AdPublished(newAdId, msg.sender, name, ipfsVideoCID, msg.value);
+        emit AdPublished(newAdId, msg.sender, name, ipfsVideoLink, msg.value);
     }
 
-    // ================================
-    // Ad Interaction Tracking (Users)
-    // ================================
+    event AdPublished(
+        uint256 indexed adId,
+        address indexed advertiser,
+        string name,
+        string ipfsVideoLink,
+        uint256 amount
+    );
+
+    // =========================
+    // Ad Interaction Tracking
+    // =========================
 
     function watchAd(uint256 adId) external {
         require(ads[adId].isActive, "Ad not active");
 
-        adInteractions[adId].push(
-            Interaction({
-                user: msg.sender,
-                adId: adId,
-                timestamp: block.timestamp
-            })
-        );
+        adInteractions[adId].push(Interaction({
+            user: msg.sender,
+            adId: adId,
+            timestamp: block.timestamp
+        }));
 
         emit AdWatched(msg.sender, adId, block.timestamp);
     }
 
-    // ================================
+    event AdWatched(address indexed user, uint256 indexed adId, uint256 timestamp);
+
+    // =========================
     // Getters
-    // ================================
+    // =========================
 
-    function getAvailableAds()
-        external
-        view
-        returns (
-            uint256[] memory,
-            address[] memory,
-            string[] memory,
-            string[] memory,
-            string[] memory,
-            uint256[] memory
-        )
-    {
+    function getAvailableAds() external view returns (
+        uint256[] memory, 
+        address[] memory, 
+        string[] memory, 
+        string[] memory, 
+        string[] memory, 
+        uint256[] memory
+    ) {
         uint256 count = 0;
-
         for (uint256 i = 1; i <= adIdCounter; i++) {
             if (ads[i].isActive) {
                 count++;
@@ -214,7 +193,7 @@ contract SnapAds {
                 advertisers[index] = ads[i].advertiser;
                 names[index] = ads[i].name;
                 descriptions[index] = ads[i].description;
-                videoLinks[index] = ads[i].ipfsVideoCID;
+                videoLinks[index] = ads[i].ipfsVideoLink;
                 funds[index] = ads[i].totalFunded;
                 index++;
             }
