@@ -1,21 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Upload, Loader2, DollarSign, Clock } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Upload, Clock, DollarSign } from "lucide-react";
+import { ethers } from "ethers";
 import Layout from "../components/Layout";
 import { Card } from "../components/Card";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
 import { Select } from "../components/Select";
+import {
+  registerAdSpot,
+  publishAd,
+  getAvailableAdSpots,
+} from "../utils/contractInteractions";
 import { Badge } from "../components/Badge";
 
 interface AdSpot {
-  address: string;
-  name: string;
+  contractAddress: string;
+  spotName: string;
   description: string;
   isAvailable: boolean;
-  price: string;
-  duration: string;
 }
 
 interface Ad {
@@ -31,42 +35,133 @@ export default function AdvertiserPage() {
   const [activeTab, setActiveTab] = useState<"spots" | "ads">("spots");
   const [isRegistering, setIsRegistering] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [adSpots, setAdSpots] = useState<AdSpot[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock data - replace with actual contract data
-  const myAdSpots: AdSpot[] = [
-    {
-      address: "0x123...",
-      name: "Premium Homepage Banner",
-      description: "High-visibility spot on the homepage",
-      isAvailable: true,
-      price: "0.1 ETH",
-      duration: "30 days",
-    },
-  ];
+  // Form states
+  const [spotName, setSpotName] = useState("");
+  const [spotDescription, setSpotDescription] = useState("");
+  const [adTitle, setAdTitle] = useState("");
+  const [adDescription, setAdDescription] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedSpot, setSelectedSpot] = useState("");
+  const [fundAmount, setFundAmount] = useState("");
+  const [spotAddress, setSpotAddress] = useState("");
 
-  const myAds: Ad[] = [
-    {
-      title: "New DeFi Protocol Launch",
-      description: "Experience the future of decentralized finance",
-      videoUrl: "ipfs://...",
-      adSpot: "0x123...",
-      views: 1234,
-      status: "active",
-    },
-  ];
+  // Load ad spots
+  useEffect(() => {
+    const loadAdSpots = async () => {
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const spots = await getAvailableAdSpots(signer);
+        setAdSpots(spots);
+      } catch (err) {
+        console.error("Error loading ad spots:", err);
+        setError("Failed to load ad spots");
+      }
+    };
+
+    loadAdSpots();
+  }, []);
 
   const handleRegisterSpot = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsRegistering(true);
-    // Add contract interaction logic here
-    setTimeout(() => setIsRegistering(false), 2000);
+    setError(null);
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      await registerAdSpot(signer, spotAddress, spotName, spotDescription);
+
+      // Reset form
+      setSpotName("");
+      setSpotDescription("");
+      setSpotAddress("");
+
+      // Reload ad spots
+      const spots = await getAvailableAdSpots(signer);
+      setAdSpots(spots);
+    } catch (err) {
+      console.error("Error registering ad spot:", err);
+      setError("Failed to register ad spot");
+    } finally {
+      setIsRegistering(false);
+    }
   };
 
   const handlePublishAd = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsPublishing(true);
-    // Add contract interaction logic here
-    setTimeout(() => setIsPublishing(false), 2000);
+    setError(null);
+
+    if (!selectedFile || !selectedSpot) {
+      setError("Please select a file and ad spot");
+      setIsPublishing(false);
+      return;
+    }
+
+    try {
+      // Upload to Pinata first
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(selectedFile);
+        reader.onload = () => {
+          const base64String = reader.result as string;
+          resolve(base64String.split(",")[1]); // Remove data URL prefix
+        };
+        reader.onerror = reject;
+      });
+
+      // Generate a unique ID for the ad
+      const adID = `ad_${Date.now()}`;
+
+      // Upload to Pinata
+      const response = await fetch("/api/uploadToPinata", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          videoBuffer: base64,
+          adID,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to upload video");
+      }
+
+      const data = await response.json();
+
+      // Now publish the ad to the blockchain
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      await publishAd(
+        signer,
+        adID,
+        selectedSpot,
+        adTitle,
+        adDescription,
+        data.ipfsCID,
+        fundAmount
+      );
+
+      // Reset form
+      setAdTitle("");
+      setAdDescription("");
+      setSelectedFile(null);
+      setSelectedSpot("");
+      setFundAmount("");
+    } catch (err) {
+      console.error("Error publishing ad:", err);
+      setError("Failed to publish ad");
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   return (
@@ -81,6 +176,12 @@ export default function AdvertiserPage() {
             Manage your ad spots and campaigns
           </p>
         </div>
+
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-600 rounded-md">
+            {error}
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex space-x-4 mb-8">
@@ -109,29 +210,26 @@ export default function AdvertiserPage() {
               <form onSubmit={handleRegisterSpot} className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-2">
                   <Input
+                    label="Contract Address"
+                    placeholder="Enter ad spot contract address"
+                    required
+                    value={spotAddress}
+                    onChange={(e) => setSpotAddress(e.target.value)}
+                  />
+                  <Input
                     label="Name"
                     placeholder="Enter ad spot name"
                     required
+                    value={spotName}
+                    onChange={(e) => setSpotName(e.target.value)}
                   />
                   <Input
                     label="Description"
                     placeholder="Enter ad spot description"
                     required
-                  />
-                  <Input
-                    label="Price (ETH)"
-                    type="number"
-                    step="0.001"
-                    placeholder="0.1"
-                    required
-                    leftIcon={<DollarSign className="h-5 w-5" />}
-                  />
-                  <Input
-                    label="Duration (Days)"
-                    type="number"
-                    placeholder="30"
-                    required
-                    leftIcon={<Clock className="h-5 w-5" />}
+                    value={spotDescription}
+                    onChange={(e) => setSpotDescription(e.target.value)}
+                    className="md:col-span-2"
                   />
                 </div>
                 <Button
@@ -146,32 +244,18 @@ export default function AdvertiserPage() {
 
             {/* Ad spots list */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {myAdSpots.map((spot) => (
-                <Card key={spot.address} variant="glass">
+              {adSpots.map((spot) => (
+                <Card key={spot.contractAddress} variant="glass">
                   <div className="p-6">
                     <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                      {spot.name}
+                      {spot.spotName}
                     </h3>
                     <p className="text-slate-600 dark:text-slate-400 mb-4">
                       {spot.description}
                     </p>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-2">
-                        <DollarSign className="h-4 w-4 text-slate-400" />
-                        <span className="text-sm text-slate-600 dark:text-slate-400">
-                          {spot.price}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Clock className="h-4 w-4 text-slate-400" />
-                        <span className="text-sm text-slate-600 dark:text-slate-400">
-                          {spot.duration}
-                        </span>
-                      </div>
-                    </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-slate-500 dark:text-slate-400 font-mono">
-                        {spot.address}
+                        {spot.contractAddress}
                       </span>
                       <Badge
                         variant={spot.isAvailable ? "success" : "error"}
@@ -194,10 +278,40 @@ export default function AdvertiserPage() {
               </h2>
               <form onSubmit={handlePublishAd} className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-2">
-                  <Input label="Title" placeholder="Enter ad title" required />
+                  <Input
+                    label="Title"
+                    placeholder="Enter ad title"
+                    required
+                    value={adTitle}
+                    onChange={(e) => setAdTitle(e.target.value)}
+                  />
                   <Input
                     label="Description"
                     placeholder="Enter ad description"
+                    required
+                    value={adDescription}
+                    onChange={(e) => setAdDescription(e.target.value)}
+                  />
+                  <Input
+                    label="Fund Amount (ETH)"
+                    type="number"
+                    step="0.001"
+                    placeholder="0.1"
+                    required
+                    value={fundAmount}
+                    onChange={(e) => setFundAmount(e.target.value)}
+                  />
+                  <Select
+                    label="Ad Spot"
+                    value={selectedSpot}
+                    onChange={(e) => setSelectedSpot(e.target.value)}
+                    options={[
+                      { value: "", label: "Select an ad spot" },
+                      ...adSpots.map((spot) => ({
+                        value: spot.contractAddress,
+                        label: spot.spotName,
+                      })),
+                    ]}
                     required
                   />
                   <div className="col-span-2">
@@ -209,77 +323,39 @@ export default function AdvertiserPage() {
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                           <Upload className="w-8 h-8 mb-2 text-slate-500 dark:text-slate-400" />
                           <p className="text-sm text-slate-500 dark:text-slate-400">
-                            Click to upload video
+                            {selectedFile
+                              ? selectedFile.name
+                              : "Click to upload video"}
                           </p>
                         </div>
                         <input
                           type="file"
                           className="hidden"
                           accept="video/*"
+                          onChange={(e) =>
+                            setSelectedFile(e.target.files?.[0] || null)
+                          }
                         />
                       </label>
                     </div>
                   </div>
-                  <Select
-                    label="Ad Spot"
-                    options={[
-                      { value: "", label: "Select an ad spot" },
-                      ...myAdSpots.map((spot) => ({
-                        value: spot.address,
-                        label: spot.name,
-                      })),
-                    ]}
-                    required
-                  />
                 </div>
                 <Button
                   type="submit"
                   isLoading={isPublishing}
                   leftIcon={<Upload className="h-5 w-5" />}
+                  disabled={
+                    !selectedFile ||
+                    !selectedSpot ||
+                    !adTitle ||
+                    !adDescription ||
+                    !fundAmount
+                  }
                 >
                   Publish Ad
                 </Button>
               </form>
             </Card>
-
-            {/* Ads list */}
-            <div className="grid gap-6 md:grid-cols-2">
-              {myAds.map((ad) => (
-                <Card key={ad.title} variant="glass">
-                  <div className="p-6">
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
-                      {ad.title}
-                    </h3>
-                    <p className="text-slate-600 dark:text-slate-400 mb-4">
-                      {ad.description}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <span className="text-sm text-slate-500 dark:text-slate-400">
-                          {ad.views} views
-                        </span>
-                        <Badge
-                          variant={
-                            ad.status === "active"
-                              ? "success"
-                              : ad.status === "pending"
-                              ? "warning"
-                              : "error"
-                          }
-                          glow
-                        >
-                          {ad.status.charAt(0).toUpperCase() +
-                            ad.status.slice(1)}
-                        </Badge>
-                      </div>
-                      <span className="text-sm text-slate-500 dark:text-slate-400 font-mono">
-                        {ad.adSpot}
-                      </span>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
           </div>
         )}
       </div>

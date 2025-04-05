@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
-import { CONTRACT_ADDRESS, CONTRACT_ABI } from "../contracts/SnapAds";
-import { SnapAdsContract } from "../contracts/types";
+import { CONTRACT_ADDRESS, CONTRACT_ABI } from "../../contracts/SnapAds";
+import { SnapAdsContract } from "../../contracts/types";
 
 // Get contract instance
 const getContract = async (signer: ethers.Signer): Promise<SnapAdsContract> => {
@@ -37,10 +37,12 @@ export const getAvailableAdSpots = async (signer: ethers.Signer) => {
     const contract = await getContract(signer);
     const [addresses, names, descriptions] =
       await contract.getAvailableAdSpots();
+    console.log(addresses, names, descriptions);
     return addresses.map((address: string, index: number) => ({
       contractAddress: address,
       spotName: names[index],
       description: descriptions[index],
+      isAvailable: true, // We'll assume available since they're returned by getAvailableAdSpots
     }));
   } catch (error) {
     console.error("Error getting available ad spots:", error);
@@ -73,23 +75,6 @@ export const publishAd = async (
     return true;
   } catch (error) {
     console.error("Error publishing ad:", error);
-    throw error;
-  }
-};
-
-// Record ad watch
-export const watchAd = async (
-  signer: ethers.Signer,
-  adId: string,
-  watcher: string
-) => {
-  try {
-    const contract = await getContract(signer);
-    const tx = await contract.watchAd(adId, watcher);
-    await tx.wait();
-    return true;
-  } catch (error) {
-    console.error("Error recording ad watch:", error);
     throw error;
   }
 };
