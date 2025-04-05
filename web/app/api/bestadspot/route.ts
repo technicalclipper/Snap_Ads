@@ -15,7 +15,7 @@ import fetch from 'node-fetch';
 
 export async function POST(req: NextRequest) {
     const body = await req.json();
-  
+    
     // Tool for deploying ad spot
     const bestadspotTool = createTool({
       id: "bestadspot-tool",
