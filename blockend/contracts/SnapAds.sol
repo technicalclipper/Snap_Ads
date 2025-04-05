@@ -22,6 +22,22 @@ contract SnapAds {
         bool isAvailable;
     }
 
+    // Struct to store user interaction details
+    struct Interaction {
+        address user;
+        uint256 adId;
+        uint256 timestamp;
+    }
+
+    // Mappings to store data
+    mapping(address => AdSpot) public adSpots; // contractAddress => AdSpot details
+    mapping(uint256 => Ad) public ads; // adId => Ad details
+    mapping(address => uint256[]) public advertiserAds; // advertiser address => list of adIds
+    mapping(address => uint256) public advertiserBalances; // address -> balance
+    mapping(uint256 => Interaction[]) public adInteractions; // adId => list of user interactions
+
+    address[] public adSpotList;
+
     modifier onlyOwner() {
         require(msg.sender == owner, "Not owner");
         _;
@@ -31,13 +47,23 @@ contract SnapAds {
         owner = msg.sender;
     }
 
-    mapping(address => AdSpot) public adSpots; // contractAddress => AdSpot details
-    mapping(uint256 => Ad) public ads; // adId => Ad details
+    // ===============================
+    // Events
+    // ===============================
+    
+    event AdWatched(
+        address indexed user,
+        uint256 indexed adId,
+        uint256 timestamp
+    );
 
-    mapping(address => uint256[]) public advertiserAds; // advertiser address => list of adIds
-    mapping(address => uint256) public advertiserBalances; // address -> balance
-
-    address[] public adSpotList;
+    event AdPublished(
+        uint256 indexed adId,
+        address indexed advertiser,
+        string name,
+        string ipfsVideoLink,
+        uint256 amount
+    );
 
     // ===============================
     // Ad Spot Registration (Contract Owners)
@@ -132,11 +158,68 @@ contract SnapAds {
         emit AdPublished(newAdId, msg.sender, name, ipfsVideoCID, msg.value);
     }
 
-    event AdPublished(
-        uint256 indexed adId,
-        address indexed advertiser,
-        string name,
-        string ipfsVideoLink,
-        uint256 amount
-    );
+    // ================================
+    // Ad Interaction Tracking (Users)
+    // ================================
+
+    function watchAd(uint256 adId) external {
+        require(ads[adId].isActive, "Ad not active");
+
+        adInteractions[adId].push(
+            Interaction({
+                user: msg.sender,
+                adId: adId,
+                timestamp: block.timestamp
+            })
+        );
+
+        emit AdWatched(msg.sender, adId, block.timestamp);
+    }
+
+    // ================================
+    // Getters
+    // ================================
+
+    function getAvailableAds()
+        external
+        view
+        returns (
+            uint256[] memory,
+            address[] memory,
+            string[] memory,
+            string[] memory,
+            string[] memory,
+            uint256[] memory
+        )
+    {
+        uint256 count = 0;
+
+        for (uint256 i = 1; i <= adIdCounter; i++) {
+            if (ads[i].isActive) {
+                count++;
+            }
+        }
+
+        uint256[] memory ids = new uint256[](count);
+        address[] memory advertisers = new address[](count);
+        string[] memory names = new string[](count);
+        string[] memory descriptions = new string[](count);
+        string[] memory videoLinks = new string[](count);
+        uint256[] memory funds = new uint256[](count);
+
+        uint256 index = 0;
+        for (uint256 i = 1; i <= adIdCounter; i++) {
+            if (ads[i].isActive) {
+                ids[index] = i;
+                advertisers[index] = ads[i].advertiser;
+                names[index] = ads[i].name;
+                descriptions[index] = ads[i].description;
+                videoLinks[index] = ads[i].ipfsVideoCID;
+                funds[index] = ads[i].totalFunded;
+                index++;
+            }
+        }
+
+        return (ids, advertisers, names, descriptions, videoLinks, funds);
+    }
 }
