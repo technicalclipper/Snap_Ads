@@ -1,7 +1,7 @@
 import type { OnTransactionHandler } from "@metamask/snaps-sdk";
 import { } from "@metamask/snaps-sdk";
-import { Heading,Box,Text,Image} from "@metamask/snaps-sdk/jsx";
-
+import { Heading,Box,Text,Image, Card} from "@metamask/snaps-sdk/jsx";
+import svgIcon from "./final.svg"
 
 
 export const onTransaction: OnTransactionHandler = async ({
@@ -11,8 +11,15 @@ export const onTransaction: OnTransactionHandler = async ({
 
   return {
     content: (<Box>
-      <Heading>Hello world!</Heading>
-      <Text>Namma thaa Finalist </Text>
+      <Image src={svgIcon}/>
+      <Card
+        image={svgIcon}
+        title="Advertisement"
+        value=""
+      />
+      
+      <Heading>New One Inch Token</Heading>
+      <Text>very low gas fee ,try it out </Text>
     </Box>)
   };
 };
