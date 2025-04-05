@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-contract AdPlatform {
+contract SnapAds {
     address public owner;
     uint256 public adIdCounter;
 
@@ -13,10 +13,11 @@ contract AdPlatform {
     }
 
     struct Ad {
+        string id;
         address advertiser;
         string name;
         string description;
-        string ipfsVideoLink;
+        string ipfsVideoCID;
         uint256 totalFunded;
         uint256 spent;
         bool isActive;
@@ -25,15 +26,15 @@ contract AdPlatform {
 
     struct Interaction {
         address user;
-        uint256 adId;
+        string adId;
         uint256 timestamp;
     }
 
     mapping(address => AdSpot) public adSpots;
-    mapping(uint256 => Ad) public ads;
-    mapping(address => uint256[]) public advertiserAds;
+    mapping(string => Ad) public ads;
+    mapping(address => string[]) public advertiserAds;
     mapping(address => uint256) public advertiserBalances;
-    mapping(uint256 => Interaction[]) public adInteractions;
+    mapping(string => Interaction[]) public adInteractions;
 
     address[] public adSpotList;
 
@@ -63,20 +64,25 @@ contract AdPlatform {
         adSpotList.push(contractAddress);
     }
 
-    function updateAdSpotAvailability(address contractAddress, bool availability) external {
+    function updateAdSpotAvailability(
+        address contractAddress,
+        bool availability
+    ) external {
         require(msg.sender == owner, "Only owner can update availability");
         adSpots[contractAddress].isAvailable = availability;
     }
 
-    function isAdSpotAvailable(address contractAddress) external view returns (bool) {
+    function isAdSpotAvailable(
+        address contractAddress
+    ) external view returns (bool) {
         return adSpots[contractAddress].isAvailable;
     }
 
-    function getAvailableAdSpots() external view returns (
-        address[] memory,
-        string[] memory,
-        string[] memory
-    ) {
+    function getAvailableAdSpots()
+        external
+        view
+        returns (address[] memory, string[] memory, string[] memory)
+    {
         uint256 count = 0;
         for (uint256 i = 0; i < adSpotList.length; i++) {
             if (adSpots[adSpotList[i]].isAvailable) {
@@ -106,39 +112,38 @@ contract AdPlatform {
     // =========================
 
     function publishAd(
+        string calldata adId,
         address adSpotContract,
         string calldata name,
         string calldata description,
-        string calldata ipfsVideoLink
+        string calldata ipfsVideoCID
     ) external payable {
         require(adSpots[adSpotContract].isAvailable, "Ad spot not available");
         require(msg.value > 0, "Must send funds to publish ad");
 
-        adIdCounter++;
-        uint256 newAdId = adIdCounter;
-
-        ads[newAdId] = Ad({
+        ads[adId] = Ad({
+            id: adId,
             advertiser: msg.sender,
             name: name,
             description: description,
-            ipfsVideoLink: ipfsVideoLink,
+            ipfsVideoCID: ipfsVideoCID,
             totalFunded: msg.value,
             spent: 0,
             isActive: true,
             adSpotContract: adSpotContract
         });
 
-        advertiserAds[msg.sender].push(newAdId);
+        advertiserAds[msg.sender].push(adId);
         advertiserBalances[msg.sender] += msg.value;
 
-        emit AdPublished(newAdId, msg.sender, name, ipfsVideoLink, msg.value);
+        emit AdPublished(adId, msg.sender, name, ipfsVideoCID, msg.value);
     }
 
     event AdPublished(
-        uint256 indexed adId,
+        string adId,
         address indexed advertiser,
         string name,
-        string ipfsVideoLink,
+        string ipfsVideoCID,
         uint256 amount
     );
 
@@ -146,59 +151,67 @@ contract AdPlatform {
     // Ad Interaction Tracking
     // =========================
 
-    function watchAd(uint256 adId) external {
+    function watchAd(string calldata adId, address watcher) external {
         require(ads[adId].isActive, "Ad not active");
 
-        adInteractions[adId].push(Interaction({
-            user: msg.sender,
-            adId: adId,
-            timestamp: block.timestamp
-        }));
+        adInteractions[adId].push(
+            Interaction({user: watcher, adId: adId, timestamp: block.timestamp})
+        );
 
         emit AdWatched(msg.sender, adId, block.timestamp);
     }
 
-    event AdWatched(address indexed user, uint256 indexed adId, uint256 timestamp);
+    event AdWatched(address indexed user, string adId, uint256 timestamp);
 
-    // =========================
-    // Getters
-    // =========================
+    // // =========================
+    // // Getters
+    // // =========================
 
-    function getAvailableAds() external view returns (
-        uint256[] memory, 
-        address[] memory, 
-        string[] memory, 
-        string[] memory, 
-        string[] memory, 
-        uint256[] memory
-    ) {
-        uint256 count = 0;
-        for (uint256 i = 1; i <= adIdCounter; i++) {
-            if (ads[i].isActive) {
-                count++;
-            }
-        }
-
-        uint256[] memory ids = new uint256[](count);
-        address[] memory advertisers = new address[](count);
-        string[] memory names = new string[](count);
-        string[] memory descriptions = new string[](count);
-        string[] memory videoLinks = new string[](count);
-        uint256[] memory funds = new uint256[](count);
-
-        uint256 index = 0;
-        for (uint256 i = 1; i <= adIdCounter; i++) {
-            if (ads[i].isActive) {
-                ids[index] = i;
-                advertisers[index] = ads[i].advertiser;
-                names[index] = ads[i].name;
-                descriptions[index] = ads[i].description;
-                videoLinks[index] = ads[i].ipfsVideoLink;
-                funds[index] = ads[i].totalFunded;
-                index++;
-            }
-        }
-
-        return (ids, advertisers, names, descriptions, videoLinks, funds);
+    function adInteractionsLength(
+        string calldata adId
+    ) external view returns (uint256) {
+        return adInteractions[adId].length;
     }
+
+    // function getAvailableAds()
+    //     external
+    //     view
+    //     returns (
+    //         uint256[] memory,
+    //         address[] memory,
+    //         string[] memory,
+    //         string[] memory,
+    //         string[] memory,
+    //         uint256[] memory
+    //     )
+    // {
+    //     uint256 count = 0;
+    //     for (uint256 i = 1; i <= adIdCounter; i++) {
+    //         if (ads[i].isActive) {
+    //             count++;
+    //         }
+    //     }
+
+    //     uint256[] memory ids = new uint256[](count);
+    //     address[] memory advertisers = new address[](count);
+    //     string[] memory names = new string[](count);
+    //     string[] memory descriptions = new string[](count);
+    //     string[] memory videoLinks = new string[](count);
+    //     uint256[] memory funds = new uint256[](count);
+
+    //     uint256 index = 0;
+    //     for (uint256 i = 1; i <= adIdCounter; i++) {
+    //         if (ads[i].isActive) {
+    //             ids[index] = i;
+    //             advertisers[index] = ads[i].advertiser;
+    //             names[index] = ads[i].name;
+    //             descriptions[index] = ads[i].description;
+    //             videoLinks[index] = ads[i].ipfsVideoCID;
+    //             funds[index] = ads[i].totalFunded;
+    //             index++;
+    //         }
+    //     }
+
+    //     return (ids, advertisers, names, descriptions, videoLinks, funds);
+    // }
 }

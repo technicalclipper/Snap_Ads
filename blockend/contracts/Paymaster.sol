@@ -4,8 +4,17 @@ pragma solidity ^0.8.19;
 import "@account-abstraction/contracts/interfaces/IPaymaster.sol";
 
 interface ISnapAds {
-    function adInteractions(uint256 adId, uint256 index) external view returns (address user, uint256 adId_, uint256 timestamp);
-    function adInteractionsLength(uint256 adId) external view returns (uint256);
+    function adInteractions(
+        string calldata adId,
+        uint256 index
+    )
+        external
+        view
+        returns (address user, string memory adId_, uint256 timestamp);
+
+    function adInteractionsLength(
+        string calldata adId
+    ) external view returns (uint256);
 }
 
 contract Paymaster is IPaymaster {
@@ -28,9 +37,9 @@ contract Paymaster is IPaymaster {
         bytes memory interactionData = paymasterAndData[20:];
 
         // Decode the interactionData (assuming it contains an address and a uint256)
-        (address sender, uint256 adId) = abi.decode(
+        (address sender, string memory adId) = abi.decode(
             interactionData,
-            (address, uint256)
+            (address, string)
         );
 
         // Check if the sender has watched the ad
@@ -41,10 +50,14 @@ contract Paymaster is IPaymaster {
         } else {
             validationData = 0; // Mark as valid
         }
+
         context = new bytes(0);
     }
 
-    function _hasUserWatchedAd(address user, uint256 adId) internal view returns (bool) {
+    function _hasUserWatchedAd(
+        address user,
+        string memory adId
+    ) internal view returns (bool) {
         ISnapAds snapAds = ISnapAds(snapAdsContract);
         uint256 interactionsLength = snapAds.adInteractionsLength(adId);
 
