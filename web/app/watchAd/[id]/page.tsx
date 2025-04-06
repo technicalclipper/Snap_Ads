@@ -9,7 +9,8 @@ import { ethers } from "ethers";
 import { usePathname } from "next/navigation";
 import { getAdDetails } from "@/app/utils/contractInteractions";
 import WorldIDVerification from "@/app/components/WorldIDVerification";
-import { useAccount } from "wagmi";
+import { watchAd } from "@/app/utils/contractInteractions";
+
 import AdVideoPlayer from "@/app/components/AdVideoPlayer";
 
 interface Ad {
@@ -25,10 +26,10 @@ interface Ad {
 export default function WatchAdPage() {
   const pathname = usePathname();
   const adId = pathname.split("/")[2];
-  const { address } = useAccount();
-  const { watchAd, isLoading, error } = useSnapAds();
+
+  const [address, setAddress] = useState<string | null>(null);
   const [hasWatched, setHasWatched] = useState(false);
-  const [currentAd, setCurrentAd] = useState<Ad | null>(null);
+  //   const [currentAd, setCurrentAd] = useState<Ad | null>(null);
   const [isVerified, setIsVerified] = useState(false);
 
   const ipfsGateway = "https://white-official-scallop-559.mypinata.cloud/ipfs/";
@@ -38,18 +39,24 @@ export default function WatchAdPage() {
       if (adId) {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+        setAddress(address);
         const ad = await getAdDetails(signer, adId);
-        setCurrentAd(ad);
+        console.log(ad);
+        // setCurrentAd(ad);
       }
     };
     fetchAd();
-  }, [adId]);
+  }, []);
 
   const handleVideoComplete = async () => {
     if (!address || !adId || hasWatched) return;
 
     try {
-      const success = await watchAd(adId, address);
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      const success = await watchAd(signer, adId, address);
       if (success) {
         setHasWatched(true);
       }
