@@ -1,1 +1,4 @@
 # Snap_Ads
+polygon_mainnet_deployed_contract_address = 0xAe4600e84007d49Cf3f45fFBA57D1EC156EA75cE
+multibaas hostname = fqzb6ixmnre3xn6d474wfze7z4.multibaas.com
+zircuit testnet contract address = 0x95597673e080113666D03eb1ec1579cA8056cc7C
